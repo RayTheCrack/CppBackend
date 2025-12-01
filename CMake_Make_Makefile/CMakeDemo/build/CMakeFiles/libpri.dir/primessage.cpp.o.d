@@ -1,5 +1,5 @@
-CMakeFiles/app.dir/message.cpp.o: \
- /home/oxythecrack/桌面/CppBackend/CMake_Make_Makefile/CMakeDemo/message.cpp \
+CMakeFiles/libpri.dir/primessage.cpp.o: \
+ /home/oxythecrack/桌面/CppBackend/CMake_Make_Makefile/CMakeDemo/primessage.cpp \
  /usr/include/stdc-predef.h /usr/include/c++/11/iostream \
  /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
@@ -151,4 +151,4 @@ CMakeFiles/app.dir/message.cpp.o: \
  /usr/include/c++/11/bits/basic_ios.tcc \
  /usr/include/c++/11/bits/ostream.tcc /usr/include/c++/11/istream \
  /usr/include/c++/11/bits/istream.tcc \
- /home/oxythecrack/桌面/CppBackend/CMake_Make_Makefile/CMakeDemo/HeadFile/message.h
+ /home/oxythecrack/桌面/CppBackend/CMake_Make_Makefile/CMakeDemo/HeadFile/primessage.h

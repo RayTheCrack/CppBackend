@@ -1,7 +1,8 @@
 CMakeFiles/app.dir/demo.cpp.o: \
  /home/oxythecrack/桌面/CppBackend/CMake_Make_Makefile/CMakeDemo/demo.cpp \
  /usr/include/stdc-predef.h \
- /home/oxythecrack/桌面/CppBackend/CMake_Make_Makefile/CMakeDemo/message.h \
+ /home/oxythecrack/桌面/CppBackend/CMake_Make_Makefile/CMakeDemo/HeadFile/message.h \
+ /home/oxythecrack/桌面/CppBackend/CMake_Make_Makefile/CMakeDemo/HeadFile/primessage.h \
  /usr/include/c++/11/iostream \
  /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h \

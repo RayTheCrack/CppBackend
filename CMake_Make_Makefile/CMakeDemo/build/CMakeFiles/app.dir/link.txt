@@ -1,1 +1,1 @@
-/usr/bin/c++ CMakeFiles/app.dir/demo.cpp.o CMakeFiles/app.dir/message.cpp.o -o app 
+/usr/bin/c++ CMakeFiles/app.dir/demo.cpp.o CMakeFiles/app.dir/message.cpp.o -o app  -Wl,-rpath,/home/oxythecrack/桌面/CppBackend/CMake_Make_Makefile/CMakeDemo/build liblibpri.so 

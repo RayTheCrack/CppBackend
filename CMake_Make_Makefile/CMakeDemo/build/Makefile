@@ -117,6 +117,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named libpri
+
+# Build rule for target.
+libpri: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 libpri
+.PHONY : libpri
+
+# fast build rule for target.
+libpri/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/libpri.dir/build.make CMakeFiles/libpri.dir/build
+.PHONY : libpri/fast
+
+#=============================================================================
 # Target rules for targets named app
 
 # Build rule for target.
@@ -177,6 +190,30 @@ message.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/app.dir/build.make CMakeFiles/app.dir/message.cpp.s
 .PHONY : message.cpp.s
 
+primessage.o: primessage.cpp.o
+.PHONY : primessage.o
+
+# target to build an object file
+primessage.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/libpri.dir/build.make CMakeFiles/libpri.dir/primessage.cpp.o
+.PHONY : primessage.cpp.o
+
+primessage.i: primessage.cpp.i
+.PHONY : primessage.i
+
+# target to preprocess a source file
+primessage.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/libpri.dir/build.make CMakeFiles/libpri.dir/primessage.cpp.i
+.PHONY : primessage.cpp.i
+
+primessage.s: primessage.cpp.s
+.PHONY : primessage.s
+
+# target to generate assembly for a file
+primessage.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/libpri.dir/build.make CMakeFiles/libpri.dir/primessage.cpp.s
+.PHONY : primessage.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -186,12 +223,16 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... app"
+	@echo "... libpri"
 	@echo "... demo.o"
 	@echo "... demo.i"
 	@echo "... demo.s"
 	@echo "... message.o"
 	@echo "... message.i"
 	@echo "... message.s"
+	@echo "... primessage.o"
+	@echo "... primessage.i"
+	@echo "... primessage.s"
 .PHONY : help
 
 

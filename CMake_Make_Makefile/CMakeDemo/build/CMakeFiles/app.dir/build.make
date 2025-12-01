@@ -108,6 +108,7 @@ app_EXTERNAL_OBJECTS =
 app: CMakeFiles/app.dir/demo.cpp.o
 app: CMakeFiles/app.dir/message.cpp.o
 app: CMakeFiles/app.dir/build.make
+app: liblibpri.so
 app: CMakeFiles/app.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/oxythecrack/桌面/CppBackend/CMake_Make_Makefile/CMakeDemo/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable app"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/app.dir/link.txt --verbose=$(VERBOSE)
