@@ -17,7 +17,7 @@ void print(const int& x)
     cout << "Const LeftVal detected! Value : " << x << endl;
 }
 
-template<class T>
+template<typename T>
 void func(T&& param) // 万能引用（模板推导 + 引用折叠机制）
 {
     print(forward<T>(param));
