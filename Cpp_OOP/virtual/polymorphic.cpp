@@ -25,7 +25,7 @@ class dog : public Animal
         }
 };
 
-void AnimalSound(Animal &animal)
+void AnimalSound(Animal& animal)
 {
     animal.speak();
 }
