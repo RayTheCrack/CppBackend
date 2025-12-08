@@ -39,8 +39,7 @@ class unique_ptr
         }
 
         // 析构函数，动态释放资源
-
-        virtual ~unique_ptr noexcept
+        virtual ~unique_ptr() noexcept
         {
             if(ptr)
             {
@@ -56,6 +55,7 @@ class unique_ptr
         // 这样会导致多个unique_ptr实例指向同一块内存，最终会导致双重释放内存的问题
         
         unique_ptr(const unique_ptr&) = delete;
+
         unique_ptr& operator=(const unique_ptr&) = delete;
 
         // 指针操作
