@@ -73,29 +73,29 @@ CMakeFiles/smartpointer.dir/src/smartpointer.cpp.o: CMakeFiles/smartpointer.dir/
 CMakeFiles/smartpointer.dir/src/smartpointer.cpp.o: ../src/smartpointer.cpp
 CMakeFiles/smartpointer.dir/src/smartpointer.cpp.o: CMakeFiles/smartpointer.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/smartpointer.dir/src/smartpointer.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/smartpointer.dir/src/smartpointer.cpp.o -MF CMakeFiles/smartpointer.dir/src/smartpointer.cpp.o.d -o CMakeFiles/smartpointer.dir/src/smartpointer.cpp.o -c /home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/src/smartpointer.cpp
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/smartpointer.dir/src/smartpointer.cpp.o -MF CMakeFiles/smartpointer.dir/src/smartpointer.cpp.o.d -o CMakeFiles/smartpointer.dir/src/smartpointer.cpp.o -c /home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/src/smartpointer.cpp
 
 CMakeFiles/smartpointer.dir/src/smartpointer.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/smartpointer.dir/src/smartpointer.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/src/smartpointer.cpp > CMakeFiles/smartpointer.dir/src/smartpointer.cpp.i
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/src/smartpointer.cpp > CMakeFiles/smartpointer.dir/src/smartpointer.cpp.i
 
 CMakeFiles/smartpointer.dir/src/smartpointer.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/smartpointer.dir/src/smartpointer.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/src/smartpointer.cpp -o CMakeFiles/smartpointer.dir/src/smartpointer.cpp.s
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/src/smartpointer.cpp -o CMakeFiles/smartpointer.dir/src/smartpointer.cpp.s
 
 CMakeFiles/smartpointer.dir/test/main.cpp.o: CMakeFiles/smartpointer.dir/flags.make
 CMakeFiles/smartpointer.dir/test/main.cpp.o: ../test/main.cpp
 CMakeFiles/smartpointer.dir/test/main.cpp.o: CMakeFiles/smartpointer.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/smartpointer.dir/test/main.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/smartpointer.dir/test/main.cpp.o -MF CMakeFiles/smartpointer.dir/test/main.cpp.o.d -o CMakeFiles/smartpointer.dir/test/main.cpp.o -c /home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/test/main.cpp
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/smartpointer.dir/test/main.cpp.o -MF CMakeFiles/smartpointer.dir/test/main.cpp.o.d -o CMakeFiles/smartpointer.dir/test/main.cpp.o -c /home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/test/main.cpp
 
 CMakeFiles/smartpointer.dir/test/main.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/smartpointer.dir/test/main.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/test/main.cpp > CMakeFiles/smartpointer.dir/test/main.cpp.i
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/test/main.cpp > CMakeFiles/smartpointer.dir/test/main.cpp.i
 
 CMakeFiles/smartpointer.dir/test/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/smartpointer.dir/test/main.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/test/main.cpp -o CMakeFiles/smartpointer.dir/test/main.cpp.s
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/oxythecrack/桌面/CppBackend/CppProjects/mysmartptr/test/main.cpp -o CMakeFiles/smartpointer.dir/test/main.cpp.s
 
 # Object files for target smartpointer
 smartpointer_OBJECTS = \
