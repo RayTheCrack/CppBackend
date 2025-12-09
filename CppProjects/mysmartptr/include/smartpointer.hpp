@@ -27,10 +27,8 @@ class unique_ptr
             if(this != &other)
             {
                 // 释放当前指针指向的内存
-                if(ptr)
-                {
-                    delete ptr;
-                }
+                // if(ptr) 没必要加，因为delete nullptr也是合法行为
+                delete ptr;
                 // 转移所有权
                 ptr = other.ptr;
                 other.ptr = nullptr;
@@ -39,15 +37,13 @@ class unique_ptr
         }
 
         // 析构函数，动态释放资源
-        virtual ~unique_ptr() noexcept
+        // 一定不会被继承的类，无需定义析构函数为虚函数，避免创建vptr,vtable的额外开销
+        ~unique_ptr() noexcept
         {
-            if(ptr)
-            {
-                // 释放当前指针指向的内存
-                delete ptr;
-                // 当前指针置为空
-                ptr = nullptr;
-            }
+            // 释放当前指针指向的内存
+            delete ptr;
+            // 当前指针置为空
+            ptr = nullptr;
         }
         
         // 禁用拷贝构造函数和拷贝赋值运算符（unique_ptr不允许拷贝）
@@ -82,10 +78,7 @@ class unique_ptr
 
         void reset(T* otherptr = nullptr) noexcept
         {
-            if(ptr)
-            {
-                delete ptr;
-            }
+            delete ptr; 
             ptr = otherptr;
         }
 
@@ -98,10 +91,138 @@ class unique_ptr
         }
 };
 
-template <typename T, typename... Args>
-unique_ptr<T> make_unique(Args&&... args) 
+template<typename T, typename... Args>
+unique_ptr<T> make_unique(Args&&... args)
 {
     return unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
+
+template<typename T> 
+class shared_ptr
+{
+    private:
+        T* ptr;
+        size_t* shared_count;
+
+        void release() noexcept
+        {
+            // 一定要先判断指针是否为空，对空指针解引用会直接崩溃
+            if(shared_count)
+            {
+                (*shared_count)--;
+
+                if(*shared_count == 0)
+                {
+                    // new 出的资源需要删除
+                    delete ptr;
+                    delete shared_count;
+                    this->ptr = nullptr;
+                    this->shared_count = nullptr;
+                } 
+            }
+        };
+    public:
+        explicit shared_ptr(T* p = nullptr) noexcept : ptr(p), shared_count(nullptr)
+        {
+            if(ptr)
+            {
+                shared_count = new size_t(1);
+            }
+        }
+
+        // 拷贝构造，shared_count++
+        shared_ptr(const shared_ptr<T>& other)
+        {
+            this->ptr = other.ptr;
+            this->shared_count = other.shared_count;
+            if(shared_count) // 持有有效资源时再++
+                (*shared_count)++;
+        }
+        // 移动构造，接管将亡值资源，原对象置空
+        shared_ptr(shared_ptr<T>&& other) noexcept
+        {
+            this->ptr = other.ptr;
+            this->shared_count = other.shared_count;
+            other.ptr = nullptr;
+            other.shared_count = nullptr;
+        }
+        // 析构函数
+        ~shared_ptr() noexcept
+        {
+            this->release();
+        }
+        // 拷贝赋值运算符，先释放自己的资源，再拷贝other的资源
+        shared_ptr<T>& operator=(const shared_ptr<T>& other)
+        {
+            // this 为当前类存储的地址 如果等于 other类存储的地址，说明此时产生自赋值
+            if(this == &other) return *this; // 要避免自赋值，此时不进行任何操作
+        
+            this->release();
+
+            this->ptr = other.ptr;
+            this->shared_count = other.shared_count;
+
+            if(shared_count) 
+                (*shared_count)++;
+
+            return *this;
+        } 
+        // 移动赋值运算符
+        shared_ptr<T>& operator=(shared_ptr<T>&& other) noexcept
+        {
+            // this 为当前类存储的地址 如果等于 other类存储的地址，说明此时产生自赋值
+            if(this == &other) return *this; // 要避免自赋值，此时不进行任何操作
+
+            this->release();
+
+            this->ptr = other.ptr;
+            this->shared_count = other.shared_count;
+
+            other.ptr = nullptr;
+            other.shared_count = nullptr;
+
+            return *this;
+        } 
+
+        // 指针操作
+        T* operator->() const noexcept
+        {
+            return this->ptr;
+        }
+
+        T* get() const noexcept
+        {
+            return this->ptr;
+        }
+
+        T& operator*() const noexcept
+        {
+            return *(this->ptr);
+        }
+
+        void reset() noexcept
+        {
+            this->release();            
+        }
+        
+        // 布尔转换
+        explicit operator bool() const noexcept
+        {
+            return this->ptr != nullptr;
+        }
+
+        size_t get_count() const noexcept
+        {
+            return shared_count ? *shared_count : 0;
+        }
+
+};
+
+template<typename T,typename... Args>
+shared_ptr<T> make_shared(Args&&... args)
+{
+    return shared_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
 
 #endif // SMARTPOINTER_HPP
