@@ -25,12 +25,18 @@ void write_config(int new_value) {
 int main() {
     // 创建5个读线程（并发读取）
     std::vector<std::thread> readers;
+    std::thread writer(write_config,200);
     for (int i = 1; i <= 5; ++i) {
         readers.emplace_back(read_config, i);
+        if(i==5)
+        {
+            readers.back().join();
+            writer.join();
+            readers.pop_back();
+        }
     }
-    std::thread writer(write_config,200);
-    // 等待所有线程完成
-    writer.join();
+    // 加短暂延迟，让写线程有机会先获取锁
+    // std::this_thread::sleep_for(std::chrono::milliseconds(10));
     // 创建1个写线程（独占写入）
     for (auto& t : readers) {
         t.join();
