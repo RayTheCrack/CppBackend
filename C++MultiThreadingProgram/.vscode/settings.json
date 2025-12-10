@@ -1,0 +1,4 @@
+{
+    "c-cpp-compile-run.cpp-compiler": "/usr/bin/g++ ",
+    "c-cpp-compile-run.cpp-flags": "-std=c++17 -Wall -Wextra -g3 "
+}
