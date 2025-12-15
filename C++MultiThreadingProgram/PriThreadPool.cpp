@@ -8,14 +8,23 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <utility>
 
 class ThreadPool
 {
 
 private:
 
+    struct compare
+    {
+        bool operator()(const std::pair<int, std::function<void()>>& a,const std::pair<int, std::function<void()>>& b)
+        {
+            return a.first < b.first;
+        }
+    };
+
     std::vector<std::thread> threads;
-    std::queue<std::function<void()>> task_queue;
+    std::priority_queue<std::pair<int, std::function<void()>>, std::vector<std::pair<int, std::function<void()>>>, compare> task_queue;
     std::mutex mtx;
     std::condition_variable cv;
     std::atomic<bool> stop{false};
@@ -29,25 +38,32 @@ private:
                 break;
             if(task_queue.empty())
                 continue;
-            std::function<void()> task = std::move(task_queue.front());
+            std::pair<int,std::function<void()>> task = task_queue.top();
             task_queue.pop();
             lock.unlock();
-            task();
+            try {
+                task.second(); // 执行任务
+            } 
+            catch (const std::exception& e) {
+                std::cerr << "Task " << task.first << " exception: " << e.what() << std::endl;
+            } catch (...) {
+                std::cerr << "Task " << task.first << " unknown exception" << std::endl;
+            }
             task_count--;
             if(task_count == 0)
-            {
+            {   
+                // notify前需加锁，防止wait和notify间的竞态关系（还未阻塞就进行了notify）
                 std::unique_lock<std::mutex> endlock(end_mtx);
                 end_cv.notify_one();
             }
         }
     };  
-    
 public:
 
-    std::mutex end_mtx;
+    std::atomic<int> task_count{0}; 
     std::condition_variable end_cv;
-    std::atomic<int> task_count{0};
-    
+    std::mutex end_mtx;
+
     explicit ThreadPool(int ThreadNums) : stop(false)
     {
         for(int i=1;i<=ThreadNums;i++)
@@ -75,13 +91,13 @@ public:
     ThreadPool& operator=(ThreadPool&& other) noexcept = default;
 
     template<typename F,typename... Args>
-    void submit(F&& f,Args&& ...args)
+    void submit(int pri,F&& f,Args&& ...args)
     {
         // 完美转发保证传入函数f的参数值类型不变
         std::function<void()> func = std::bind(std::forward<F>(f),std::forward<Args>(args)...);
         {
-            std::unique_lock<std::mutex> lock(mtx);
-            task_queue.emplace(std::move(func));
+            std::unique_lock<std::mutex> lock(mtx);               
+            task_queue.emplace(pri,std::move(func));
             task_count++;
         }
         // 离开作用域后，lock已自动解锁析构
@@ -93,15 +109,15 @@ int main()
     ThreadPool pool(5);
     for(int i=1;i<=10;i++)
     {
-        pool.submit([i]()
+        pool.submit(i,[i]()
         {
             std::cout << "task " << i << " is running" << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(1));
             std::cout << "task " << i << " is done" << std::endl;
         });
     }
-    // 先让所有任务运行完，避免主程序提前退出析构线程池
-    std::unique_lock<std::mutex> endlock(pool.end_mtx);
-    pool.end_cv.wait(endlock,[&pool](){return pool.task_count == 0;});
+    // 让所有任务先运行完，避免主程序提前退出析构线程池
+    std::unique_lock<std::mutex> lock(pool.end_mtx);
+    pool.end_cv.wait(lock,[&pool](){return pool.task_count == 0;});
     return 0;
 }
