@@ -7,15 +7,14 @@ int calculate_mul(int a,int b)
 }
 int main()
 {
-    // 包装函数，关联future（返回值类型int）
-    std::packaged_task<int(int, int)> task(calculate_mul);
-    // 获取future
+    std::packaged_task<int(int,int)> task(calculate_mul);
     std::future<int> fut = task.get_future();
-    // 创建线程，传递task（必须移动）
-    std::thread t(std::move(task),5,6);
-    // 获取结果
-    int result = fut.get();
-    std::cout << "Mul: " << result << std::endl; // 输出30
+    // int temp = fut.get();
+    std::thread t(std::move(task),20,10);
+    int res = fut.get();
     t.join();
+    std::cout << res << std::endl;
+    
+
     return 0;
 }
