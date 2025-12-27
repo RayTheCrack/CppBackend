@@ -132,10 +132,8 @@ public:
             std::cout << "[Info] New client connected: IP = " << client_ip << ", Port = " << client_port << std::endl;
 
             // 为当前客户端创建独立线程，执行通信逻辑
-            // 使用std::thread创建线程，传入通信工作函数及参数
-            // 注意：使用std::move转移客户端fd所有权，避免悬空引用
             std::thread client_thread(&TCPServer::client_communicate, this, client_fd, std::string(client_ip), client_port);
-            // 分离线程：线程执行完毕后自动释放资源，无需主线程join
+            // 分离线程：线程执行完毕后自动释放资源，不阻塞主线程
             client_thread.detach();
         }
     }
