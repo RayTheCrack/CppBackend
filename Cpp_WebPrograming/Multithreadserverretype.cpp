@@ -87,6 +87,13 @@ public:
         server_addr.sin_port = htons(server_port);
         server_addr.sin_addr.s_addr = INADDR_ANY;
 
+        // 优化：添加套接字复用选项，允许端口快速复用
+        int opt = 1;
+        if(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) == -1)
+        {
+            error("Failed to set socket options!");
+        }
+
         if(bind(server_fd, reinterpret_cast<sockaddr*>(&server_addr), sizeof(server_addr)) == -1)
         {
             error("Failed to bind socket!");
