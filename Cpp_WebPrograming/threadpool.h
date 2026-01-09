@@ -37,8 +37,7 @@ private:
             task_queue.pop();
             lock.unlock();
             task();
-            task_count--;
-            if(task_count == 0)
+            if(task_count.fetch_sub(1) == 1)
             {
                 std::unique_lock<std::mutex> endlock(end_mtx);
                 end_cv.notify_one();
@@ -83,30 +82,17 @@ public:
     template<typename F,typename...Args>
     void submit(F&& f,Args&& ...args)
     {
+        if(stop.load() == true) 
+        {
+            std::cerr << "The ThreadPool is already stopped!" << std::endl;
+            return;
+        }
         std::function<void()> task = std::bind(std::forward<F>(f),std::forward<Args>(args)...);
         {
             std::unique_lock<std::mutex> lock(mtx);
             task_queue.emplace(std::move(task));
-            task_count++;
+            task_count.fetch_add(1);
         }
         cv.notify_one();
     } 
 };
-
-int main()
-{
-    ThreadPool pool(5);
-    for(int i=1;i<=10;i++)
-    {
-        pool.submit([i]()
-        {
-            std::cout << "task " << i << " is running" << std::endl;
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            std::cout << "task " << i << " is done" << std::endl;
-        });
-    }
-    // 先让所有任务运行完，避免主程序提前退出析构线程池
-    std::unique_lock<std::mutex> endlock(pool.end_mtx);
-    pool.end_cv.wait(endlock,[&pool](){return pool.task_count == 0;});
-    return 0;
-}

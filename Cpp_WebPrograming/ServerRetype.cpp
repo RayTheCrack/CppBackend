@@ -26,7 +26,7 @@ private:
             close(client_fd);
             client_fd = -1;
         }
-        exit(EXIT_FAILURE);
+        throw std::runtime_error(msg);
     }
 
 public:

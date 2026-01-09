@@ -34,7 +34,7 @@ private:
             server_fd = -1;
         }
         is_running = false;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error(msg);
     }
 
 public:

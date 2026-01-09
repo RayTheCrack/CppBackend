@@ -28,7 +28,7 @@ private:
             close(server_fd);
             server_fd = -1;
         }
-        exit(EXIT_FAILURE);
+        throw std::runtime_error(msg);
     }
 
 public:

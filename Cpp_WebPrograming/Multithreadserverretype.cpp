@@ -20,7 +20,7 @@ private:
             close(server_fd);
             server_fd = -1;
         }
-        exit(EXIT_FAILURE);
+        throw std::runtime_error(msg);
     }   
     // 多线程客户端通信函数
     void client_communicate(int client_fd, const std::string& client_ip, uint16_t client_port)

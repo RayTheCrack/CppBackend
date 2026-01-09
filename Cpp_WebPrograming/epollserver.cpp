@@ -29,7 +29,7 @@ private:
         }
         if(epfd != -1) close(epfd);
         is_running = false;
-        exit(EXIT_FAILURE);
+        throw std::runtime_error(msg);
     }
 public:
     explicit SingleThreadEPollServer(const uint16_t _port) 
