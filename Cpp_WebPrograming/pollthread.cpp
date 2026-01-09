@@ -1,3 +1,4 @@
+// BBL DRIZZY
 #include <iostream>
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -10,15 +11,16 @@
 #include <signal.h>
 #include <mutex>
 #include <atomic>
-
+#include <poll.h>
+#include <vector>
 class TCPServer
 {
 private:
     int max_fd;
     int server_fd;
-    fd_set read_fds;
     std::atomic<bool> is_running;
     const uint16_t server_port;
+    std::vector<pollfd> fds;
     std::set<int,std::greater<int>> client_fds;
     std::mutex mtx;
     
@@ -29,6 +31,7 @@ private:
         std::cerr << "[Error] " << msg << std::endl;
         for(int fd : client_fds) if(fd != -1) close(fd);
         client_fds.clear();
+        fds.clear();
         if(CloseServer and server_fd != -1)
         {
             close(server_fd);
@@ -40,16 +43,15 @@ private:
 
 public:
 
-    explicit TCPServer(const uint16_t _port) : server_port(_port), server_fd(-1), max_fd(-1), is_running(true)
-    {
-        FD_ZERO(&read_fds);
-    }
+    explicit TCPServer(const uint16_t _port) 
+        : server_port(_port), server_fd(-1), max_fd(-1), is_running(true) {}
 
     ~TCPServer() noexcept
     {
         is_running = false;
         std::unique_lock<std::mutex> lock(mtx);
         for(int fd : client_fds) if(fd != -1) close(fd);
+        fds.clear();
         client_fds.clear();
         if(server_fd != -1) close(server_fd);
     }
@@ -84,7 +86,8 @@ public:
             error("Failed to listen on socket!");
         }
 
-        FD_SET(server_fd, &read_fds);
+        fds.resize(server_fd + 1);
+        fds[server_fd] = {server_fd, POLLIN, 0};
         max_fd = server_fd;
 
         std::cout << "Server is currently listening on port: " << server_port << std::endl; 
@@ -108,7 +111,8 @@ public:
         std::cout << "[Info] New client connected: IP = " << client_ip << ", Port = " << client_port << std::endl;
 
         std::unique_lock<std::mutex> lock(mtx);
-        FD_SET(client_fd, &read_fds);
+        if(client_fd >= fds.size()) fds.resize(client_fd + 1);
+        fds[client_fd] = {client_fd, POLLIN, 0};
         client_fds.insert(client_fd);
         max_fd = std::max(server_fd, *client_fds.begin());
     }
@@ -118,7 +122,7 @@ public:
         if(!is_running)
         {
             std::unique_lock<std::mutex> lock(mtx);
-            FD_CLR(fd, &read_fds);
+            fds[fd] = {-1, 0 ,0};
             close(fd);
             client_fds.erase(fd);
             std::cout << "[Info] Client " << fd << " closed due to server shutdown" << std::endl;
@@ -147,8 +151,7 @@ public:
                 std::cerr << "[Warning] Failed to receive data from client " << fd << "!" << std::endl;
             
             std::unique_lock<std::mutex> lock(mtx);
-            // 从读集合中移除该fd
-            FD_CLR(fd, &read_fds);
+            fds[fd] = {-1, 0 ,0};
             // 关闭该客户端fd
             close(fd);
             // 从客户端fd容器中移除;
@@ -158,33 +161,33 @@ public:
         }
     }
 
-    void select_loop()
+    void poll_loop()
     {   
         std::cout << "[Info] Server is waiting for client connections..." << std::endl;
-        fd_set temp_fds;
         while(is_running)
         {   
             std::unique_lock<std::mutex> lock(mtx);
-            temp_fds = read_fds;
             int cur_max_fd = max_fd;
             lock.unlock();
-            int cnt = select(cur_max_fd + 1, &temp_fds, nullptr, nullptr, nullptr);
+            int cnt = poll(fds.data(), cur_max_fd + 1, -1);
             if(cnt == -1)
             {
                 // 先检测是否是服务器正常退出导致的select失败
                 if(!is_running) 
                 {
-                    std::cout << "[Info] Select exited normally (server shutdown)" << std::endl;
+                    std::cout << "[Info] Poll exited normally (server shutdown)" << std::endl;
                     break; // 直接退出循环，不打印错误
                 }
                 // 仅在服务器未退出时打印警告，不调用error()（避免程序退出）
-                std::cerr << "[Warning] Failed to call select! Continue..." << std::endl;
+                std::cerr << "[Warning] Failed to call Poll! Continue..." << std::endl;
                 continue;
             }
             
-            for(int fd=0;fd<=cur_max_fd;fd++)
+            for(int fd=0;fd<=cur_max_fd and cnt > 0;fd++)
             {
-                if(FD_ISSET(fd, &temp_fds))
+                // 跳过无事件/无效的fd
+                if(fds[fd].fd == -1 or fds[fd].revents == 0) continue;
+                if(fds[fd].revents & POLLIN)
                 {
                     // 此时说明有新的客户端连接
                     if(fd == server_fd)
@@ -196,6 +199,7 @@ public:
                         std::thread t(&TCPServer::client_communicate, this, fd);
                         t.detach();
                     }
+                    cnt--;
                 }
             }
         }
@@ -226,7 +230,7 @@ int main()
     TCPServer server(9999);
     ptr = &server;
     server.init();
-    server.select_loop();
+    server.poll_loop();
     std::cout << "Closed server sucessfully!" << std::endl;
     return 0;
 }

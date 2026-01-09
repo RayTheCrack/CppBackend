@@ -1,3 +1,4 @@
+// BBL DRIZZY
 #include <iostream>
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -10,16 +11,17 @@
 #include <signal.h>
 #include <mutex>
 #include <atomic>
+#include <poll.h>
+#include <vector>
+#include <sys/epoll.h>
 
 class TCPServer
 {
 private:
-    int max_fd;
     int server_fd;
-    fd_set read_fds;
     std::atomic<bool> is_running;
     const uint16_t server_port;
-    std::set<int,std::greater<int>> client_fds;
+    int epfd; // epoll实例fd（替代poll的fds数组）
     std::mutex mtx;
     
 
@@ -27,31 +29,28 @@ private:
     {
         std::unique_lock<std::mutex> lock(mtx);
         std::cerr << "[Error] " << msg << std::endl;
-        for(int fd : client_fds) if(fd != -1) close(fd);
-        client_fds.clear();
         if(CloseServer and server_fd != -1)
         {
             close(server_fd);
             server_fd = -1;
         }
+        if(epfd != -1) close(epfd);
         is_running = false;
         exit(EXIT_FAILURE);
     }
 
 public:
 
-    explicit TCPServer(const uint16_t _port) : server_port(_port), server_fd(-1), max_fd(-1), is_running(true)
-    {
-        FD_ZERO(&read_fds);
-    }
+    explicit TCPServer(const uint16_t _port) 
+        : server_port(_port), server_fd(-1), epfd(-1), is_running(true) {}
 
     ~TCPServer() noexcept
     {
         is_running = false;
         std::unique_lock<std::mutex> lock(mtx);
-        for(int fd : client_fds) if(fd != -1) close(fd);
-        client_fds.clear();
         if(server_fd != -1) close(server_fd);
+        if(epfd != -1) close(epfd);
+        std::cout << "[Info] TCPServer destoryed!" << std::endl;
     }
 
     void init()
@@ -83,11 +82,21 @@ public:
         {
             error("Failed to listen on socket!");
         }
-
-        FD_SET(server_fd, &read_fds);
-        max_fd = server_fd;
-
-        std::cout << "Server is currently listening on port: " << server_port << std::endl; 
+        // 创建epoll实例
+        epfd = epoll_create1(EPOLL_CLOEXEC);
+        if(epfd == -1)
+        {
+            error("Failed to create epoll instance!");
+        }
+        // 将server_fd添入epoll事件表中（监听读事件）
+        epoll_event ev;
+        ev.events = EPOLLIN;
+        ev.data.fd = server_fd;
+        if(epoll_ctl(epfd, EPOLL_CTL_ADD, server_fd, &ev) == -1)
+        {
+            error("Failed to add server_fd to epoll!");
+        }
+        std::cout << "[Info] Server is currently listening on port: " << server_port << " (epoll mode)" << std::endl; 
     }
 
     void new_client()
@@ -108,9 +117,15 @@ public:
         std::cout << "[Info] New client connected: IP = " << client_ip << ", Port = " << client_port << std::endl;
 
         std::unique_lock<std::mutex> lock(mtx);
-        FD_SET(client_fd, &read_fds);
-        client_fds.insert(client_fd);
-        max_fd = std::max(server_fd, *client_fds.begin());
+        epoll_event client_event;
+        client_event.events = EPOLLIN;
+        client_event.data.fd = client_fd;
+        if(epoll_ctl(epfd, EPOLL_CTL_ADD, client_fd, &client_event) == -1)
+        {
+            std::cerr << "[Warning] Failed to add client_fd to epoll!" << std::endl;
+            close(client_fd);
+            return;
+        }
     }
 
     void client_communicate(int fd)
@@ -118,9 +133,8 @@ public:
         if(!is_running)
         {
             std::unique_lock<std::mutex> lock(mtx);
-            FD_CLR(fd, &read_fds);
+            epoll_ctl(epfd, EPOLL_CTL_DEL, fd, nullptr);
             close(fd);
-            client_fds.erase(fd);
             std::cout << "[Info] Client " << fd << " closed due to server shutdown" << std::endl;
             return;
         }
@@ -137,6 +151,11 @@ public:
             if(resp_len == -1 and is_running)
             {
                 std::cerr << "[Warning] Failed to send response to client " << fd << "!" << std::endl;
+                // 新增：发送失败时清理fd
+                std::unique_lock<std::mutex> lock(mtx);
+                epoll_ctl(epfd, EPOLL_CTL_DEL, fd, nullptr);
+                close(fd);
+                return;
             }
         }
         else
@@ -147,51 +166,41 @@ public:
                 std::cerr << "[Warning] Failed to receive data from client " << fd << "!" << std::endl;
             
             std::unique_lock<std::mutex> lock(mtx);
-            // 从读集合中移除该fd
-            FD_CLR(fd, &read_fds);
-            // 关闭该客户端fd
+            epoll_ctl(epfd, EPOLL_CTL_DEL, fd, nullptr);  // 从epoll移除fd
             close(fd);
-            // 从客户端fd容器中移除;
-            client_fds.erase(fd);
-            if(client_fds.empty()) max_fd = server_fd;
-            else max_fd = std::max(server_fd, *client_fds.begin());
         }
     }
 
-    void select_loop()
+    void epoll_loop()
     {   
         std::cout << "[Info] Server is waiting for client connections..." << std::endl;
-        fd_set temp_fds;
+        int MAX_EVENTS = 100010;
+        std::vector<epoll_event> events(MAX_EVENTS);
+        
         while(is_running)
         {   
-            std::unique_lock<std::mutex> lock(mtx);
-            temp_fds = read_fds;
-            int cur_max_fd = max_fd;
-            lock.unlock();
-            int cnt = select(cur_max_fd + 1, &temp_fds, nullptr, nullptr, nullptr);
-            if(cnt == -1)
+            int nfds = epoll_wait(epfd, events.data(), MAX_EVENTS, -1);
+            if(nfds == -1)
             {
-                // 先检测是否是服务器正常退出导致的select失败
                 if(!is_running) 
                 {
-                    std::cout << "[Info] Select exited normally (server shutdown)" << std::endl;
-                    break; // 直接退出循环，不打印错误
+                    std::cout << "[Info] Epoll exited normally (server shutdown)" << std::endl;
+                    break;
                 }
-                // 仅在服务器未退出时打印警告，不调用error()（避免程序退出）
-                std::cerr << "[Warning] Failed to call select! Continue..." << std::endl;
+                std::cerr << "[Warning] Failed to call epoll_wait! Continue..." << std::endl;
                 continue;
             }
-            
-            for(int fd=0;fd<=cur_max_fd;fd++)
+
+            for(int i=0;i<nfds;i++)
             {
-                if(FD_ISSET(fd, &temp_fds))
+                int fd = events[i].data.fd;
+                if(events[i].events & EPOLLIN)
                 {
-                    // 此时说明有新的客户端连接
                     if(fd == server_fd)
                     {
                         new_client();
                     }
-                    else // 否则则是客户端进行通信
+                    else
                     {
                         std::thread t(&TCPServer::client_communicate, this, fd);
                         t.detach();
@@ -226,7 +235,7 @@ int main()
     TCPServer server(9999);
     ptr = &server;
     server.init();
-    server.select_loop();
+    server.epoll_loop();
     std::cout << "Closed server sucessfully!" << std::endl;
     return 0;
 }

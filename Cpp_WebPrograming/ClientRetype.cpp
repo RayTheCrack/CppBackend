@@ -108,3 +108,10 @@ int main()
     std::cout << "Client shutdown successfully!" << std::endl;
     return 0;
 }
+/*
+# 测试参数说明：
+# -c 1000：并发连接数1000
+# -t 8：使用8个线程
+# -d 30s：测试时长30秒
+wrk -c 1000 -t 8 -d 30s -s test.lua tcp://192.168.182.128:9999
+*/
