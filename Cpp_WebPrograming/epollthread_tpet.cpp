@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <mutex>
 #include <atomic>
+#include <fcntl.h>
 #include <poll.h>
 #include <vector>
 #include <sys/epoll.h>
@@ -45,6 +46,12 @@ private:
     {
         epoll_ctl(epfd, EPOLL_CTL_DEL, fd, nullptr);
         close(fd);
+    }
+
+    void set_non_block(int fd)
+    {
+        int flag = fcntl(fd, F_GETFL, 0);
+        fcntl(fd, F_SETFL, flag | O_NONBLOCK);
     }
 
 public:
@@ -118,8 +125,9 @@ public:
 
         std::unique_lock<std::mutex> lock(mtx);
         epoll_event client_event;
-        client_event.events = EPOLLIN;
+        client_event.events = EPOLLIN | EPOLLET;
         client_event.data.fd = client_fd;
+        set_non_block(client_fd);
         if(epoll_ctl(epfd, EPOLL_CTL_ADD, client_fd, &client_event) == -1)
         {
             std::cerr << "[Warning] Failed to add client_fd to epoll!" << std::endl;
@@ -133,11 +141,19 @@ public:
     void client_communicate(int fd)
     {
         char buffer[1024]{};
-        ssize_t msg_len = recv(fd, buffer, sizeof(buffer) - 1,0);
-
-        if(msg_len <= 0)
+        ssize_t msg_len;
+        std::string recv_msg = "";
+        std::cout << "[Client: " << fd << "] received message: ";
+        while((msg_len = recv(fd, buffer, sizeof(buffer) - 1, 0)) > 0) 
         {
-            if(msg_len == 0 or is_running.load() == false)
+            buffer[msg_len] = '\0';
+            recv_msg += std::string(buffer);
+        }
+        if(recv_msg.empty()) recv_msg = "[EMPTY INPUT]";
+        std::cout << recv_msg << std::endl;
+        if((msg_len <= 0 and errno != EAGAIN) or recv_msg == "[EMPTY INPUT]")
+        {
+            if(is_running.load() == false or msg_len == 0)
                 std::cout << "[Info] Client " << fd << " disconnected!" << std::endl;
             else
                 std::cerr << "[Warning] Failed to receive data from client " << fd << "!" << std::endl;
@@ -146,24 +162,21 @@ public:
             close_fd(fd);
             return;
         }
-        buffer[msg_len] = '\0';
-        std::cout << "[Client " << fd << "] message : " << buffer << std::endl;
-        std::string response = "Server received message : " + std::string(buffer);
+        std::string response = "Server received message : " + recv_msg;
         pool.submit([this, response, fd]
         {   
             if(is_running.load()) 
             {
+                std::unique_lock<std::mutex> closelock(mtx);
                 ssize_t send_len = send(fd, response.c_str(), response.size(), 0);
                 if(send_len == -1) 
                 {
                     std::cerr << "[Warning] Failed to send to client " << fd << std::endl;
-                    std::unique_lock<std::mutex> closelock(mtx);
                     close_fd(fd);
-                    closelock.unlock();
                 }
             }
         });
-}
+    }
 
     void epoll_loop()
     {   
